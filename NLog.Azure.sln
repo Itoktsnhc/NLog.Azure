@@ -3,9 +3,14 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
 VisualStudioVersion = 15.0.27428.2037
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NLog.Azure", "NLog.Azure\NLog.Azure.csproj", "{EB24E9D4-9178-416A-9942-6C10EB8B1C73}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "NLog.Azure", "NLog.Azure\NLog.Azure.csproj", "{EB24E9D4-9178-416A-9942-6C10EB8B1C73}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NLog.Azure.Tests", "NLog.Azure.Tests\NLog.Azure.Tests.csproj", "{96607952-7F34-4256-806D-9A7579044FCF}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "NLog.Azure.Tests", "NLog.Azure.Tests\NLog.Azure.Tests.csproj", "{96607952-7F34-4256-806D-9A7579044FCF}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{6E851599-CA2B-4CCA-BDAC-C5B81FBE1EE6}"
+	ProjectSection(SolutionItems) = preProject
+		README.md = README.md
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

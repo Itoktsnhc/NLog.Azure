@@ -1,12 +1,11 @@
-# NLog.AzureStorage
+# NLog.Azure
 
 
-NLog.AzureStorage
-
+NLog.Azure
 
 DONE
 
-- NLog to Azure Append Blob (AsyncWrapper)
+- NLog to Azure Storage Append Blob (AsyncWrapper)
 
 TODO
 

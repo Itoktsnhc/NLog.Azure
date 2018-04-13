@@ -5,19 +5,16 @@ using NLog.Extensions.Logging;
 
 namespace NLog.Azure.Tests
 {
-    class Program
+    internal class Program
     {
-        public static Microsoft.Extensions.Logging.ILogger _logger;
-        static void Main(string[] args)
+        public static Microsoft.Extensions.Logging.ILogger Logger;
+
+        private static void Main()
         {
-
             var loggerFactory = new LoggerFactory().AddNLog();
-            _logger = loggerFactory.CreateLogger("test");
+            Logger = loggerFactory.CreateLogger("test");
 
-            foreach (var index in Enumerable.Range(0, 10000))
-            {
-                _logger.LogInformation($"info : {index}");
-            }
+            foreach (var index in Enumerable.Range(0, 10000)) Logger.LogInformation($"info : {index}");
 
             Console.WriteLine($"{DateTime.Now} Log Finished");
             Console.ReadLine();
