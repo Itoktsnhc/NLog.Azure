@@ -12,10 +12,10 @@ using NLog.Config;
 using NLog.Layouts;
 using NLog.Targets;
 
-namespace NLog.Azure.AzureStorage
+namespace NLog.Azure
 {
     [Target("AzureAppendBlob")]
-    public class AppendBlobTarget : TargetWithLayout
+    public class AzureAppendBlobTarget : TargetWithLayout
     {
         private CloudBlobClient _client;
         private CloudStorageAccount _account;
@@ -37,25 +37,51 @@ namespace NLog.Azure.AzureStorage
         }
         protected override void WriteAsyncThreadSafe(IList<AsyncLogEventInfo> logEvents)
         {
-            Console.WriteLine($"{DateTime.Now} Trigged Flush {logEvents.Count}");
+#if DEBUG
+
+            Console.WriteLine($"{DateTime.Now} Trigged WriteAsyncThreadSafe {logEvents.Count}");
+#endif
             if (!logEvents.Any() || _client == null)
                 return;
 
             var appendList = (from asyncLogEventInfo in logEvents
                               select asyncLogEventInfo.LogEvent
                 into logEvent
-                              let blobName = Path.Combine(SubFolderPath.Render(logEvent), BlobName.Render(logEvent))
-                              let containerRef = _client.GetContainerReference(Container.Render(logEvent))
-                              let blobRef = containerRef.GetAppendBlobReference(blobName)
-                              select new AzureLogDto()
-                              {
-                                  LogEvent = logEvent,
-                                  BlobRef = blobRef,
-                                  ContainerRef = containerRef,
-                              }).ToList();
+                              select GenerateLogDto(logEvent)).ToList();
             WriteToAppendBlobAsync(appendList).GetAwaiter().GetResult();
         }
-        private async Task WriteToAppendBlobAsync(IList<AzureLogDto> logList)
+        protected override void Write(LogEventInfo logEvent)
+        {
+#if DEBUG
+
+            Console.WriteLine($"{DateTime.Now} Trigged Write");
+#endif
+            var azureLogDto = GenerateLogDto(logEvent);
+            WriteToAppendBlobAsync(new List<AzureAppendLogDto>()
+            {
+                azureLogDto
+            }).GetAwaiter().GetResult();
+        }
+        protected override void WriteAsyncThreadSafe(AsyncLogEventInfo logEvent)
+        {
+#if DEBUG
+            Console.WriteLine($"{DateTime.Now} WriteAsyncThreadSafe ");
+#endif
+            var azureLogDto = GenerateLogDto(logEvent.LogEvent);
+            WriteToAppendBlobAsync(new List<AzureAppendLogDto>()
+            {
+                azureLogDto
+            }).GetAwaiter().GetResult();
+        }
+        private AzureAppendLogDto GenerateLogDto(LogEventInfo logEvent)
+        {
+            var azureLogDto =
+                new AzureAppendLogDto { ContainerRef = _client.GetContainerReference(Container.Render(logEvent)) };
+            azureLogDto.BlobRef = azureLogDto.ContainerRef.GetAppendBlobReference(Path.Combine(SubFolderPath.Render(logEvent), BlobName.Render(logEvent)));
+            azureLogDto.LogEvent = logEvent;
+            return azureLogDto;
+        }
+        private async Task WriteToAppendBlobAsync(IList<AzureAppendLogDto> logList)
         {
             foreach (var containerGroup in logList.GroupBy(s => s.ContainerRef.Name))
             {
@@ -80,9 +106,7 @@ namespace NLog.Azure.AzureStorage
                     {
                         await blobFirst.BlobRef.AppendBlockAsync(ms);
                     }
-
                 }
-
             }
         }
     }

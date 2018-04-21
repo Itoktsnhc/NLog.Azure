@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Linq;
+using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using NLog.Extensions.Logging;
 
@@ -13,11 +14,23 @@ namespace NLog.Azure.Tests
         {
             var loggerFactory = new LoggerFactory().AddNLog();
             Logger = loggerFactory.CreateLogger("test");
-
-            foreach (var index in Enumerable.Range(0, 10000)) Logger.LogInformation($"info : {index}");
-
-            Console.WriteLine($"{DateTime.Now} Log Finished");
+            MutiThreadLogToTarget();
             Console.ReadLine();
+
+        }
+
+        private static void MutiThreadLogToTarget()
+        {
+            var task1 = Task.Run(() =>
+            {
+                foreach (var index in Enumerable.Range(0, 1000)) Logger.LogInformation($"task1 info : {index}");
+            });
+            var task2 = Task.Run(() =>
+            {
+                foreach (var index in Enumerable.Range(0, 1000)) Logger.LogInformation($"task2 info : {index}");
+            });
+            Task.WaitAll(task1, task2);
+            Console.WriteLine($"{DateTime.Now} Log Finished");
         }
     }
 }
