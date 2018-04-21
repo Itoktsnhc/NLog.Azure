@@ -16,7 +16,6 @@ namespace NLog.Azure.Tests
             Logger = loggerFactory.CreateLogger("test");
             MutiThreadLogToTarget();
             Console.ReadLine();
-
         }
 
         private static void MutiThreadLogToTarget()

@@ -1,12 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.ComponentModel;
-using System.IO;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 using Microsoft.WindowsAzure.Storage;
-using Microsoft.WindowsAzure.Storage.Blob;
 using Microsoft.WindowsAzure.Storage.Queue;
 using NLog.Azure.Entities.NLog.AzureStorage;
 using NLog.Common;
@@ -22,10 +18,9 @@ namespace NLog.Azure
         private CloudStorageAccount _account;
         private CloudQueueClient _client;
 
-        [RequiredParameter]
-        public String ConnectionString { get; set; }
-        [RequiredParameter]
-        public Layout QueueName { get; set; }
+        [RequiredParameter] public String ConnectionString { get; set; }
+
+        [RequiredParameter] public Layout QueueName { get; set; }
 
         protected override void InitializeTarget()
         {
@@ -33,6 +28,7 @@ namespace NLog.Azure
             _account = CloudStorageAccount.Parse(ConnectionString);
             _client = _account.CreateCloudQueueClient();
         }
+
         protected override void WriteAsyncThreadSafe(IList<AsyncLogEventInfo> logEvents)
         {
 #if DEBUG
@@ -41,32 +37,35 @@ namespace NLog.Azure
 
             WriteToQueueAsync(logEvents.Select(s => GenerateLogDto(s.LogEvent)).ToList()).GetAwaiter().GetResult();
         }
+
         protected override void Write(LogEventInfo logEvent)
         {
 #if DEBUG
             Console.WriteLine($"{DateTime.Now} Trigged Write");
 #endif
-            WriteToQueueAsync(new List<AzureQueueLogDto>()
+            WriteToQueueAsync(new List<AzureQueueLogDto>
             {
                 GenerateLogDto(logEvent)
             }).GetAwaiter().GetResult();
         }
+
         protected override void WriteAsyncThreadSafe(AsyncLogEventInfo logEvent)
         {
 #if DEBUG
             Console.WriteLine($"{DateTime.Now} WriteAsyncThreadSafe ");
 #endif
-            WriteToQueueAsync(new List<AzureQueueLogDto>()
-             {
-                 GenerateLogDto(logEvent.LogEvent)
-             }).GetAwaiter().GetResult();
+            WriteToQueueAsync(new List<AzureQueueLogDto>
+            {
+                GenerateLogDto(logEvent.LogEvent)
+            }).GetAwaiter().GetResult();
         }
+
         private AzureQueueLogDto GenerateLogDto(LogEventInfo logEvent)
         {
             return new AzureQueueLogDto
             {
                 QueueRef = _client.GetQueueReference(QueueName.Render(logEvent)),
-                LogEvent = logEvent,
+                LogEvent = logEvent
             };
         }
 
@@ -78,9 +77,8 @@ namespace NLog.Azure
                 var first = grouppedDto.First();
                 await first.QueueRef.CreateIfNotExistsAsync();
                 foreach (var azureQueueLogDto in dtos)
-                {
-                    await first.QueueRef.AddMessageAsync(new CloudQueueMessage(azureQueueLogDto.LogEvent.FormattedMessage));
-                }
+                    await first.QueueRef.AddMessageAsync(
+                        new CloudQueueMessage(azureQueueLogDto.LogEvent.FormattedMessage));
             }
         }
     }

@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 using Microsoft.WindowsAzure.Storage;
 using Microsoft.WindowsAzure.Storage.Table;
@@ -19,12 +18,11 @@ namespace NLog.Azure
         private CloudStorageAccount _account;
         private CloudTableClient _client;
 
-        [RequiredParameter]
-        public String ConnectionString { get; set; }
-        [RequiredParameter]
-        public Layout TableName { get; set; }
-        [RequiredParameter]
-        public Layout PartitionKey { get; set; }
+        [RequiredParameter] public String ConnectionString { get; set; }
+
+        [RequiredParameter] public Layout TableName { get; set; }
+
+        [RequiredParameter] public Layout PartitionKey { get; set; }
 
 
         protected override void InitializeTarget()
@@ -41,32 +39,35 @@ namespace NLog.Azure
 #endif
             WriteToTableAsync(logEvents.Select(s => GenerateLogDto(s.LogEvent)).ToList()).GetAwaiter().GetResult();
         }
+
         protected override void Write(LogEventInfo logEvent)
         {
 #if DEBUG
             Console.WriteLine($"{DateTime.Now} Trigged Write");
 #endif
-            WriteToTableAsync(new List<AzureTableLogDto>()
+            WriteToTableAsync(new List<AzureTableLogDto>
             {
                 GenerateLogDto(logEvent)
             }).GetAwaiter().GetResult();
         }
+
         protected override void WriteAsyncThreadSafe(AsyncLogEventInfo logEvent)
         {
 #if DEBUG
             Console.WriteLine($"{DateTime.Now} WriteAsyncThreadSafe ");
 #endif
-            WriteToTableAsync(new List<AzureTableLogDto>()
+            WriteToTableAsync(new List<AzureTableLogDto>
             {
                 GenerateLogDto(logEvent.LogEvent)
             }).GetAwaiter().GetResult();
         }
+
         private AzureTableLogDto GenerateLogDto(LogEventInfo logEvent)
         {
             return new AzureTableLogDto
             {
                 TableRef = _client.GetTableReference(TableName.Render(logEvent)),
-                LogEvent = logEvent,
+                LogEvent = logEvent
             };
         }
 
@@ -82,9 +83,11 @@ namespace NLog.Azure
                     var batchOption = new TableBatchOperation();
                     foreach (var azureTableLogDto in innerGroupedDtos)
                     {
-                        var tableItem = new TableLogEntity(PartitionKey.Render(azureTableLogDto.LogEvent), azureTableLogDto.LogEvent);
+                        var tableItem = new TableLogEntity(PartitionKey.Render(azureTableLogDto.LogEvent),
+                            azureTableLogDto.LogEvent);
                         batchOption.Add(TableOperation.InsertOrMerge(tableItem));
                     }
+
                     await first.TableRef.ExecuteBatchAsync(batchOption);
                 }
             }
