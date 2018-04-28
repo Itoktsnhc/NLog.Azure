@@ -31,18 +31,12 @@ namespace NLog.Azure
 
         protected override void WriteAsyncThreadSafe(IList<AsyncLogEventInfo> logEvents)
         {
-#if DEBUG
-            Console.WriteLine($"{DateTime.Now} Trigged WriteAsyncThreadSafe {logEvents.Count}");
-#endif
 
             WriteToQueueAsync(logEvents.Select(s => GenerateLogDto(s.LogEvent)).ToList()).GetAwaiter().GetResult();
         }
 
         protected override void Write(LogEventInfo logEvent)
         {
-#if DEBUG
-            Console.WriteLine($"{DateTime.Now} Trigged Write");
-#endif
             WriteToQueueAsync(new List<AzureQueueLogDto>
             {
                 GenerateLogDto(logEvent)
@@ -51,9 +45,6 @@ namespace NLog.Azure
 
         protected override void WriteAsyncThreadSafe(AsyncLogEventInfo logEvent)
         {
-#if DEBUG
-            Console.WriteLine($"{DateTime.Now} WriteAsyncThreadSafe ");
-#endif
             WriteToQueueAsync(new List<AzureQueueLogDto>
             {
                 GenerateLogDto(logEvent.LogEvent)

@@ -13,8 +13,13 @@ namespace NLog.Azure.Tests
         private static void Main()
         {
             var loggerFactory = new LoggerFactory().AddNLog();
-            Logger = loggerFactory.CreateLogger("test");
+            Logger = loggerFactory.CreateLogger<Program>();
+            foreach (var i in Enumerable.Range(0, 1000))
+            {
+                Logger.LogInformation($"Info Logged{i}");
+            }
             MutiThreadLogToTarget();
+
             Console.ReadLine();
         }
 
@@ -22,11 +27,11 @@ namespace NLog.Azure.Tests
         {
             var task1 = Task.Run(() =>
             {
-                foreach (var index in Enumerable.Range(0, 1000)) Logger.LogInformation($"task1 info : {index}");
+                foreach (var index in Enumerable.Range(0, 12)) Logger.LogInformation($"task1 info : {index}");
             });
             var task2 = Task.Run(() =>
             {
-                foreach (var index in Enumerable.Range(0, 1000)) Logger.LogInformation($"task2 info : {index}");
+                foreach (var index in Enumerable.Range(0, 12)) Logger.LogInformation($"task2 info : {index}");
             });
             Task.WaitAll(task1, task2);
             Console.WriteLine($"{DateTime.Now} Log Finished");
