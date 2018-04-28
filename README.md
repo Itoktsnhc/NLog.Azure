@@ -13,8 +13,8 @@ DONE
 - NLog to Azure Storage Append Blob (AsyncWrapper or Per log)
 - NLog to Azure Storage Queue (AsyncWrapper or Per log)
 - NLog to Azure Storage Table (AsyncWrapper or Per log)
+- NLog to Azure EventHub (AsyncWrapper or Per log)
 
 TODO
 
 - NLog to Azure Service Bus
-- NLog to Azure EventHub
