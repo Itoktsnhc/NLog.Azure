@@ -17,6 +17,7 @@ namespace NLog.Azure
     {
         private CloudStorageAccount _account;
         private CloudTableClient _client;
+        private readonly Object _lockObject = new Object();
 
         [RequiredParameter] public String ConnectionString { get; set; }
 
@@ -37,14 +38,6 @@ namespace NLog.Azure
             WriteToTableAsync(logEvents.Select(s => GenerateLogDto(s.LogEvent)).ToList()).GetAwaiter().GetResult();
         }
 
-        protected override void Write(LogEventInfo logEvent)
-        {
-            WriteToTableAsync(new List<AzureTableLogDto>
-            {
-                GenerateLogDto(logEvent)
-            }).GetAwaiter().GetResult();
-        }
-
         protected override void WriteAsyncThreadSafe(AsyncLogEventInfo logEvent)
         {
             WriteToTableAsync(new List<AzureTableLogDto>
@@ -55,11 +48,14 @@ namespace NLog.Azure
 
         private AzureTableLogDto GenerateLogDto(LogEventInfo logEvent)
         {
-            return new AzureTableLogDto
+            lock (_lockObject)
             {
-                TableRef = _client.GetTableReference(TableName.Render(logEvent)),
-                LogEvent = logEvent
-            };
+                return new AzureTableLogDto
+                {
+                    TableRef = _client.GetTableReference(TableName.Render(logEvent)),
+                    LogEvent = logEvent
+                };
+            }
         }
 
         private async Task WriteToTableAsync(IList<AzureTableLogDto> dtos)

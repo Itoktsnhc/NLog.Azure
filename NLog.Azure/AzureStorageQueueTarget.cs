@@ -17,7 +17,7 @@ namespace NLog.Azure
     {
         private CloudStorageAccount _account;
         private CloudQueueClient _client;
-
+        private readonly Object _lockObject = new Object();
         [RequiredParameter] public String ConnectionString { get; set; }
 
         [RequiredParameter] public Layout QueueName { get; set; }
@@ -31,17 +31,9 @@ namespace NLog.Azure
 
         protected override void WriteAsyncThreadSafe(IList<AsyncLogEventInfo> logEvents)
         {
-
             WriteToQueueAsync(logEvents.Select(s => GenerateLogDto(s.LogEvent)).ToList()).GetAwaiter().GetResult();
         }
 
-        protected override void Write(LogEventInfo logEvent)
-        {
-            WriteToQueueAsync(new List<AzureQueueLogDto>
-            {
-                GenerateLogDto(logEvent)
-            }).GetAwaiter().GetResult();
-        }
 
         protected override void WriteAsyncThreadSafe(AsyncLogEventInfo logEvent)
         {
@@ -53,11 +45,16 @@ namespace NLog.Azure
 
         private AzureQueueLogDto GenerateLogDto(LogEventInfo logEvent)
         {
-            return new AzureQueueLogDto
+            lock (_lockObject)
             {
-                QueueRef = _client.GetQueueReference(QueueName.Render(logEvent)),
-                LogEvent = logEvent
-            };
+                return new AzureQueueLogDto
+                {
+                    QueueRef = _client.GetQueueReference(QueueName.Render(logEvent)),
+                    LogEvent = logEvent
+                };
+            }
+
+
         }
 
         private async Task WriteToQueueAsync(IList<AzureQueueLogDto> dtos)

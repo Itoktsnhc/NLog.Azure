@@ -19,7 +19,7 @@ namespace NLog.Azure
     {
         private CloudStorageAccount _account;
         private CloudBlobClient _client;
-
+        private readonly Object _lockObject = new Object();
         [RequiredParameter] public String ConnectionString { get; set; }
 
         [RequiredParameter] public Layout Container { get; set; }
@@ -41,20 +41,13 @@ namespace NLog.Azure
                 return;
 
             var appendList = (from asyncLogEventInfo in logEvents
-                select asyncLogEventInfo.LogEvent
+                              select asyncLogEventInfo.LogEvent
                 into logEvent
-                select GenerateLogDto(logEvent)).ToList();
+                              select GenerateLogDto(logEvent)).ToList();
             WriteToAppendBlobAsync(appendList).GetAwaiter().GetResult();
         }
 
-        protected override void Write(LogEventInfo logEvent)
-        {
-            var azureLogDto = GenerateLogDto(logEvent);
-            WriteToAppendBlobAsync(new List<AzureAppendLogDto>
-            {
-                azureLogDto
-            }).GetAwaiter().GetResult();
-        }
+
 
         protected override void WriteAsyncThreadSafe(AsyncLogEventInfo logEvent)
         {
@@ -67,13 +60,17 @@ namespace NLog.Azure
 
         private AzureAppendLogDto GenerateLogDto(LogEventInfo logEvent)
         {
-            var azureLogDto =
-                new AzureAppendLogDto {ContainerRef = _client.GetContainerReference(Container.Render(logEvent))};
-            azureLogDto.BlobRef =
-                azureLogDto.ContainerRef.GetAppendBlobReference(Path.Combine(SubFolderPath.Render(logEvent),
-                    BlobName.Render(logEvent)));
-            azureLogDto.LogEvent = logEvent;
-            return azureLogDto;
+            lock (_lockObject)
+            {
+                var azureLogDto =
+                    new AzureAppendLogDto { ContainerRef = _client.GetContainerReference(Container.Render(logEvent)) };
+                azureLogDto.BlobRef =
+                    azureLogDto.ContainerRef.GetAppendBlobReference(Path.Combine(SubFolderPath.Render(logEvent),
+                        BlobName.Render(logEvent)));
+                azureLogDto.LogEvent = logEvent;
+                return azureLogDto;
+            }
+
         }
 
         private async Task WriteToAppendBlobAsync(IList<AzureAppendLogDto> logList)
