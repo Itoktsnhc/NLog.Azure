@@ -26,35 +26,40 @@ namespace NLog.Azure
         {
             base.InitializeTarget();
             _account = CloudStorageAccount.Parse(ConnectionString);
-            _client = _account.CreateCloudQueueClient();
+                _client = _account.CreateCloudQueueClient();
         }
 
         protected override void WriteAsyncThreadSafe(IList<AsyncLogEventInfo> logEvents)
         {
-            WriteToQueueAsync(logEvents.Select(s => GenerateLogDto(s.LogEvent)).ToList()).GetAwaiter().GetResult();
+            IList<AzureQueueLogDto> azureQueueLogDtos;
+            lock (_lockObject)
+            {
+                azureQueueLogDtos = logEvents.Select(s => GenerateLogDto(s.LogEvent)).ToList();
+            }
+            WriteToQueueAsync(azureQueueLogDtos).GetAwaiter().GetResult();
         }
 
 
         protected override void WriteAsyncThreadSafe(AsyncLogEventInfo logEvent)
         {
-            WriteToQueueAsync(new List<AzureQueueLogDto>
+            IList<AzureQueueLogDto> azureQueueLogDto;
+            lock (_lockObject)
             {
-                GenerateLogDto(logEvent.LogEvent)
-            }).GetAwaiter().GetResult();
+                azureQueueLogDto = new List<AzureQueueLogDto>
+                {
+                    GenerateLogDto(logEvent.LogEvent)
+                };
+            }
+            WriteToQueueAsync(azureQueueLogDto).GetAwaiter().GetResult();
         }
 
         private AzureQueueLogDto GenerateLogDto(LogEventInfo logEvent)
         {
-            lock (_lockObject)
+            return new AzureQueueLogDto
             {
-                return new AzureQueueLogDto
-                {
-                    QueueRef = _client.GetQueueReference(QueueName.Render(logEvent)),
-                    LogEvent = logEvent
-                };
-            }
-
-
+                QueueRef = _client.GetQueueReference(QueueName.Render(logEvent)),
+                LogEvent = logEvent
+            };
         }
 
         private async Task WriteToQueueAsync(IList<AzureQueueLogDto> dtos)

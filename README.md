@@ -15,6 +15,3 @@ DONE
 - NLog to Azure Storage Table (AsyncWrapper or Per log)
 - NLog to Azure EventHub (AsyncWrapper or Per log)
 
-TODO
-
-- NLog to Azure Service Bus

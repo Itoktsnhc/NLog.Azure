@@ -30,33 +30,41 @@ namespace NLog.Azure
         {
             base.InitializeTarget();
             _account = CloudStorageAccount.Parse(ConnectionString);
-            _client = _account.CreateCloudTableClient();
+                _client = _account.CreateCloudTableClient();
         }
 
         protected override void WriteAsyncThreadSafe(IList<AsyncLogEventInfo> logEvents)
         {
-            WriteToTableAsync(logEvents.Select(s => GenerateLogDto(s.LogEvent)).ToList()).GetAwaiter().GetResult();
+            IList<AzureTableLogDto> tableLogDtos;
+            lock (_lockObject)
+            {
+                tableLogDtos = logEvents.Select(s => GenerateLogDto(s.LogEvent)).ToList();
+            }
+            WriteToTableAsync(tableLogDtos).GetAwaiter().GetResult();
         }
 
         protected override void WriteAsyncThreadSafe(AsyncLogEventInfo logEvent)
         {
-            WriteToTableAsync(new List<AzureTableLogDto>
+            List<AzureTableLogDto> azureTableDto;
+            lock (_lockObject)
             {
-                GenerateLogDto(logEvent.LogEvent)
-            }).GetAwaiter().GetResult();
+                azureTableDto = new List<AzureTableLogDto>
+                {
+                    GenerateLogDto(logEvent.LogEvent)
+                };
+            }
+            WriteToTableAsync(azureTableDto).GetAwaiter().GetResult();
         }
 
         private AzureTableLogDto GenerateLogDto(LogEventInfo logEvent)
         {
-            lock (_lockObject)
+            return new AzureTableLogDto
             {
-                return new AzureTableLogDto
-                {
-                    TableRef = _client.GetTableReference(TableName.Render(logEvent)),
-                    LogEvent = logEvent
-                };
-            }
+                TableRef = _client.GetTableReference(TableName.Render(logEvent)),
+                LogEvent = logEvent
+            };
         }
+
 
         private async Task WriteToTableAsync(IList<AzureTableLogDto> dtos)
         {
